@@ -1,0 +1,388 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode colors using OKLCH */
+    --background: oklch(98% 0.01 240);
+    --foreground: oklch(20% 0.02 240);
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(20% 0.02 240);
+    --popover: oklch(100% 0 0);
+    --popover-foreground: oklch(20% 0.02 240);
+    --primary: oklch(55% 0.20 260);
+    --primary-foreground: oklch(98% 0.01 260);
+    --secondary: oklch(85% 0.05 240);
+    --secondary-foreground: oklch(20% 0.02 240);
+    --muted: oklch(92% 0.02 240);
+    --muted-foreground: oklch(50% 0.02 240);
+    --accent: oklch(75% 0.15 320);
+    --accent-foreground: oklch(98% 0.01 320);
+    --destructive: oklch(55% 0.22 25);
+    --destructive-foreground: oklch(98% 0.01 25);
+    --border: oklch(85% 0.02 240);
+    --input: oklch(85% 0.02 240);
+    --ring: oklch(55% 0.20 260);
+    --radius: 0.5rem;
+    --success: oklch(60% 0.18 145);
+    --success-foreground: oklch(98% 0.01 145);
+    --warning: oklch(70% 0.18 85);
+    --warning-foreground: oklch(20% 0.02 85);
+    --dark-purple: oklch(35% 0.15 280);
+  }
+
+  .dark {
+    /* Dark mode colors using OKLCH */
+    --background: oklch(15% 0.02 240);
+    --foreground: oklch(95% 0.01 240);
+    --card: oklch(18% 0.02 240);
+    --card-foreground: oklch(95% 0.01 240);
+    --popover: oklch(18% 0.02 240);
+    --popover-foreground: oklch(95% 0.01 240);
+    --primary: oklch(65% 0.20 260);
+    --primary-foreground: oklch(15% 0.02 260);
+    --secondary: oklch(25% 0.05 240);
+    --secondary-foreground: oklch(95% 0.01 240);
+    --muted: oklch(25% 0.02 240);
+    --muted-foreground: oklch(65% 0.02 240);
+    --accent: oklch(70% 0.15 320);
+    --accent-foreground: oklch(15% 0.02 320);
+    --destructive: oklch(55% 0.22 25);
+    --destructive-foreground: oklch(98% 0.01 25);
+    --border: oklch(30% 0.02 240);
+    --input: oklch(30% 0.02 240);
+    --ring: oklch(65% 0.20 260);
+    --success: oklch(60% 0.18 145);
+    --success-foreground: oklch(98% 0.01 145);
+    --warning: oklch(70% 0.18 85);
+    --warning-foreground: oklch(20% 0.02 85);
+    --dark-purple: oklch(35% 0.15 280);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Rainbow glow effect for bookmarked items */
+@keyframes rainbow-glow {
+  0% {
+    filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8));
+  }
+  16.67% {
+    filter: drop-shadow(0 0 8px rgba(255, 127, 0, 0.8));
+  }
+  33.33% {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 0, 0.8));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(0, 255, 0, 0.8));
+  }
+  66.67% {
+    filter: drop-shadow(0 0 8px rgba(0, 0, 255, 0.8));
+  }
+  83.33% {
+    filter: drop-shadow(0 0 8px rgba(139, 0, 255, 0.8));
+  }
+  100% {
+    filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8));
+  }
+}
+
+.rainbow-glow {
+  animation: rainbow-glow 3s linear infinite;
+}
+
+/* Smooth UI animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-top {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slide-in-from-top;
+}
+
+.slide-in-from-top-4 {
+  animation-name: slide-in-from-top;
+}
+
+.slide-in-from-bottom-4 {
+  animation-name: slide-in-from-bottom;
+}
+
+.slide-in-from-right-2 {
+  animation-name: slide-in-from-right;
+}
+
+.zoom-in-95 {
+  animation-name: zoom-in;
+}
+
+/* Ensure all dropdown menus have solid, non-transparent backgrounds with smooth animations */
+[data-radix-select-content] {
+  background-color: hsl(var(--popover)) !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+[data-radix-select-content] [role="option"] {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  opacity: 1 !important;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+[data-radix-select-content] [role="option"]:hover,
+[data-radix-select-content] [role="option"][data-highlighted] {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+  opacity: 1 !important;
+}
+
+[data-radix-popover-content] {
+  background-color: hsl(var(--popover)) !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+[data-radix-dropdown-menu-content] {
+  background-color: hsl(var(--popover)) !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+[data-radix-dropdown-menu-content] [role="menuitem"] {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  opacity: 1 !important;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+[data-radix-dropdown-menu-content] [role="menuitem"]:hover,
+[data-radix-dropdown-menu-content] [role="menuitem"][data-highlighted] {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+  opacity: 1 !important;
+}
+
+/* Dialog animations */
+[data-radix-dialog-overlay] {
+  animation: fade-in 200ms ease-out;
+}
+
+[data-radix-dialog-content] {
+  animation: zoom-in 300ms ease-out;
+}
+
+/* Watchlist dropdown specific styling - black background with gold border */
+.watchlist-dropdown-content {
+  background-color: #000000 !important;
+  border-color: #FFD700 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+.watchlist-dropdown-content [role="option"] {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transition: background-color 150ms ease;
+}
+
+.watchlist-dropdown-content [role="option"]:hover,
+.watchlist-dropdown-content [role="option"][data-highlighted],
+.watchlist-dropdown-content [role="option"][data-state="checked"] {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Genre filter popup specific styling - black background with gold outline, fully non-transparent */
+.genre-filter-popup {
+  background-color: #000000 !important;
+  border: 4px solid #FFD700 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+.genre-filter-popup * {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.genre-filter-popup button {
+  color: #ffffff !important;
+  background-color: transparent !important;
+  opacity: 1 !important;
+  transition: background-color 150ms ease;
+}
+
+.genre-filter-popup button:hover {
+  background-color: rgba(255, 215, 0, 0.1) !important;
+  opacity: 1 !important;
+}
+
+.genre-filter-popup label {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Move/Copy dialog dropdown styling - dark gray background */
+.move-copy-dropdown-content {
+  background-color: #2a2a2a !important;
+  border-color: #666666 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+.move-copy-dropdown-content [role="option"] {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  transition: background-color 150ms ease;
+}
+
+.move-copy-dropdown-content [role="option"]:hover,
+.move-copy-dropdown-content [role="option"][data-highlighted],
+.move-copy-dropdown-content [role="option"][data-state="checked"] {
+  background-color: #3a3a3a !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Main page dropdown styling - fully non-transparent with solid backgrounds */
+.main-page-dropdown-content {
+  background-color: hsl(var(--popover)) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+.main-page-dropdown-content [role="option"] {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  opacity: 1 !important;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.main-page-dropdown-content [role="option"]:hover,
+.main-page-dropdown-content [role="option"][data-highlighted],
+.main-page-dropdown-content [role="option"][data-state="checked"] {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+  opacity: 1 !important;
+}
+
+/* Cache dropdown styling - black background with gold outline, fully non-transparent */
+.cache-dropdown-content {
+  background-color: #000000 !important;
+  border: 4px solid #FFD700 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  animation: slide-down 200ms ease-out;
+}
+
+.cache-dropdown-content * {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.cache-dropdown-content h4 {
+  color: #FFD700 !important;
+}
+
+.cache-dropdown-content .text-muted-foreground {
+  color: #cccccc !important;
+}
+
+.cache-dropdown-content .text-xs {
+  color: #cccccc !important;
+}
+
+.cache-dropdown-content button {
+  opacity: 1 !important;
+}
+
+/* Dark purple border for anime cards on main page */
+.anime-card-border {
+  border: 2px solid var(--dark-purple);
+}
+
