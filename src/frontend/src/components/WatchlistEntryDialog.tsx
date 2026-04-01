@@ -9,10 +9,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { RefreshCw, Search } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { WatchlistEntry } from "../backend";
+import type { AnimeEntry, WatchlistEntry } from "../backend";
+import { useActor } from "../hooks/useActor";
 import {
+  useAddAnimeToWatchlist,
+  useRemoveAnimeFromWatchlist,
+  useToggleBookmark,
   useUpdateTotalEpisodes,
   useUpdateWatchlistEntry,
 } from "../hooks/useQueries";
@@ -22,6 +27,18 @@ interface WatchlistEntryDialogProps {
   watchlistName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface AnilistSearchResult {
+  id: number;
+  title: { romaji: string; english: string | null; native: string };
+  coverImage: { large: string; medium: string };
+  genres: string[];
+  averageScore: number | null;
+  episodes: number | null;
+  status: string;
+  startDate: { year: number | null; month: number | null; day: number | null };
+  description: string | null;
 }
 
 const genreColors: Record<string, string> = {
@@ -55,8 +72,23 @@ export default function WatchlistEntryDialog({
   const [editingTotalEpisodes, setEditingTotalEpisodes] = useState(false);
   const [totalEpisodesValue, setTotalEpisodesValue] = useState("");
 
+  // Sync with AniList state
+  const [showSyncPanel, setShowSyncPanel] = useState(false);
+  const [syncSearchTerm, setSyncSearchTerm] = useState("");
+  const [syncResults, setSyncResults] = useState<AnilistSearchResult[]>([]);
+  const [syncSearching, setSyncSearching] = useState(false);
+  const [confirmResult, setConfirmResult] =
+    useState<AnilistSearchResult | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const { actor } = useActor();
   const updateEntryMutation = useUpdateWatchlistEntry();
   const updateTotalEpisodesMutation = useUpdateTotalEpisodes();
+  const removeAnimeMutation = useRemoveAnimeFromWatchlist();
+  const addAnimeMutation = useAddAnimeToWatchlist();
+  const toggleBookmarkMutation = useToggleBookmark();
+
+  const isCustom = entry.anime.airingStatus === "CUSTOM";
 
   const handleEpisodesEdit = () => {
     setEditingEpisodes(true);
@@ -118,6 +150,141 @@ export default function WatchlistEntryDialog({
     }
   };
 
+  const handleSyncSearch = async () => {
+    if (!syncSearchTerm.trim()) return;
+    if (!actor) {
+      toast.error("Not connected to backend");
+      return;
+    }
+    setSyncSearching(true);
+    setSyncResults([]);
+    try {
+      const graphqlQuery = JSON.stringify({
+        query: `query ($search: String, $page: Int, $perPage: Int) {
+          Page(page: $page, perPage: $perPage) {
+            media(search: $search, sort: [SEARCH_MATCH]) {
+              id
+              title { romaji english native }
+              coverImage { large medium }
+              genres
+              averageScore
+              episodes
+              status
+              startDate { year month day }
+              description
+            }
+          }
+        }`,
+        variables: { search: syncSearchTerm.trim(), page: 1, perPage: 10 },
+      });
+      const response = await actor.fetchAnimeFromAnilist(graphqlQuery);
+      const parsed = JSON.parse(response);
+      if (parsed.errors) {
+        throw new Error(parsed.errors[0]?.message || "AniList error");
+      }
+      const media: AnilistSearchResult[] = (parsed.data?.Page?.media || []).map(
+        (m: any) => ({
+          id: m.id,
+          title: {
+            romaji: m.title.romaji || "",
+            english: m.title.english || null,
+            native: m.title.native || "",
+          },
+          coverImage: {
+            large: m.coverImage?.large || "",
+            medium: m.coverImage?.medium || "",
+          },
+          genres: m.genres || [],
+          averageScore: m.averageScore ?? null,
+          episodes: m.episodes ?? null,
+          status: m.status || "UNKNOWN",
+          startDate: {
+            year: m.startDate?.year ?? null,
+            month: m.startDate?.month ?? null,
+            day: m.startDate?.day ?? null,
+          },
+          description: m.description || null,
+        }),
+      );
+      setSyncResults(media);
+      if (media.length === 0) toast.info("No results found");
+    } catch (err: any) {
+      toast.error(err.message || "Search failed");
+    } finally {
+      setSyncSearching(false);
+    }
+  };
+
+  const handleConfirmSync = async () => {
+    if (!confirmResult) return;
+    setSyncing(true);
+    try {
+      // Save personal data before replacing
+      const savedRating = entry.personalRating;
+      const savedEpisodes = entry.episodesWatched;
+      const savedNotes = entry.notes;
+      const savedBookmarked = entry.isBookmarked;
+      const savedAlternateTitles: string[] = [];
+
+      const r = confirmResult;
+      const airedDate = r.startDate?.year
+        ? `${r.startDate.year}-${String(r.startDate.month || 1).padStart(2, "0")}-${String(r.startDate.day || 1).padStart(2, "0")}`
+        : "";
+
+      const newAnime: AnimeEntry = {
+        anilistId: BigInt(r.id),
+        title: r.title.romaji || r.title.english || r.title.native || "",
+        description: r.description || "",
+        genres: r.genres,
+        publicRating: BigInt(r.averageScore || 0),
+        coverUrl: r.coverImage.large || r.coverImage.medium || "",
+        episodesAvailable: BigInt(r.episodes || 0),
+        airingStatus: r.status || "UNKNOWN",
+        airedDate,
+      };
+
+      // Remove old custom entry
+      await removeAnimeMutation.mutateAsync({
+        watchlistName,
+        anilistId: entry.anime.anilistId,
+      });
+
+      // Add new AniList entry
+      await addAnimeMutation.mutateAsync({
+        watchlistName,
+        anime: newAnime,
+        alternateTitles: savedAlternateTitles,
+      });
+
+      // Restore personal data
+      await updateEntryMutation.mutateAsync({
+        watchlistName,
+        anilistId: BigInt(r.id),
+        personalRating: savedRating,
+        episodesWatched: savedEpisodes,
+        notes: savedNotes,
+      });
+
+      // Restore bookmark if it was set
+      if (savedBookmarked) {
+        await toggleBookmarkMutation.mutateAsync({
+          watchlistName,
+          anilistId: BigInt(r.id),
+        });
+      }
+
+      toast.success(
+        `Synced with AniList: "${newAnime.title}" — your personal data was preserved.`,
+      );
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Sync failed");
+    } finally {
+      setSyncing(false);
+      setConfirmResult(null);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[3412px] w-[90vw] max-h-[90vh] overflow-y-auto bg-[#3a3a3a]">
@@ -140,6 +307,152 @@ export default function WatchlistEntryDialog({
           <h2 className="text-3xl font-bold text-center">
             {entry.anime.title}
           </h2>
+
+          {/* Sync with AniList — only for CUSTOM entries */}
+          {isCustom && (
+            <div className="w-full">
+              {!showSyncPanel ? (
+                <Button
+                  type="button"
+                  onClick={() => setShowSyncPanel(true)}
+                  className="flex items-center gap-2 bg-black border-2 border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-black font-semibold transition-colors"
+                  data-ocid="sync_anilist.button"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Sync with AniList
+                </Button>
+              ) : (
+                <div className="bg-black border-2 border-yellow-500 rounded-lg p-4 space-y-3 w-full">
+                  <div className="flex items-center justify-between">
+                    <span className="text-yellow-400 font-semibold text-sm">
+                      Search AniList to replace metadata
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSyncPanel(false);
+                        setSyncResults([]);
+                        setSyncSearchTerm("");
+                        setConfirmResult(null);
+                      }}
+                      className="text-gray-400 hover:text-white text-xs"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-gray-400">
+                    Your notes, rating, episodes watched, and bookmark will be
+                    preserved.
+                  </p>
+
+                  <div className="flex gap-2">
+                    <Input
+                      value={syncSearchTerm}
+                      onChange={(e) => setSyncSearchTerm(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSyncSearch()}
+                      placeholder="Search by title..."
+                      className="bg-gray-900 border-2 border-yellow-600 text-white placeholder:text-gray-500 focus:border-yellow-400"
+                      data-ocid="sync_anilist.search_input"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleSyncSearch}
+                      disabled={syncSearching || !syncSearchTerm.trim()}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold shrink-0"
+                      data-ocid="sync_anilist.submit_button"
+                    >
+                      {syncSearching ? (
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Confirmation prompt */}
+                  {confirmResult && (
+                    <div className="bg-gray-900 border border-yellow-600 rounded-lg p-3 space-y-2">
+                      <p className="text-sm text-white">
+                        Replace metadata with{" "}
+                        <span className="text-yellow-400 font-semibold">
+                          {confirmResult.title.romaji ||
+                            confirmResult.title.english}
+                        </span>
+                        ? Your notes, rating, and episodes will be preserved.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={handleConfirmSync}
+                          disabled={syncing}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold text-sm h-8"
+                          data-ocid="sync_anilist.confirm_button"
+                        >
+                          {syncing ? "Syncing..." : "Confirm Sync"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setConfirmResult(null)}
+                          disabled={syncing}
+                          className="border-gray-600 text-white hover:bg-gray-800 text-sm h-8"
+                          data-ocid="sync_anilist.cancel_button"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search results */}
+                  {syncResults.length > 0 && !confirmResult && (
+                    <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                      {syncResults.map((result) => (
+                        <button
+                          key={result.id}
+                          type="button"
+                          onClick={() => setConfirmResult(result)}
+                          className="w-full flex items-center gap-3 p-2 rounded bg-gray-900 border border-yellow-700 hover:border-yellow-400 hover:bg-gray-800 transition-colors text-left"
+                        >
+                          {(result.coverImage.medium ||
+                            result.coverImage.large) && (
+                            <img
+                              src={
+                                result.coverImage.medium ||
+                                result.coverImage.large
+                              }
+                              alt={result.title.romaji}
+                              className="w-10 h-14 object-cover rounded shrink-0"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-yellow-300 text-sm font-semibold truncate">
+                              {result.title.romaji ||
+                                result.title.english ||
+                                result.title.native}
+                            </p>
+                            {result.title.english &&
+                              result.title.english !== result.title.romaji && (
+                                <p className="text-gray-400 text-xs truncate">
+                                  {result.title.english}
+                                </p>
+                              )}
+                            <p className="text-gray-500 text-xs">
+                              {result.status}
+                              {result.startDate?.year
+                                ? ` · ${result.startDate.year}`
+                                : ""}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Synopsis */}
           <div className="w-full">
@@ -281,6 +594,8 @@ export default function WatchlistEntryDialog({
             </div>
           </div>
         </div>
+
+        <DialogFooter />
       </DialogContent>
     </Dialog>
   );

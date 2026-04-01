@@ -130,8 +130,8 @@ export default function CreateAnimeCardDialog({
       return;
     }
 
-    // Generate a unique ID using negative timestamp to avoid AniList ID conflicts
-    const customId = BigInt(-Date.now());
+    // Generate a unique positive ID to avoid backend nat rejection
+    const customId = BigInt(Date.now());
 
     const anime: AnimeEntry = {
       anilistId: customId,
