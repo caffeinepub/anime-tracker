@@ -250,8 +250,8 @@ actor {
       Runtime.trap("Unauthorized: Only users can update watchlist entries");
     };
 
-    if (notes.size() > 120) {
-      Runtime.trap("Notes must be 120 characters or less");
+    if (notes.size() > 1000) {
+      Runtime.trap("Notes must be 1,000 characters or less");
     };
 
     if (personalRating < 0.0 or personalRating > 10.0) {
