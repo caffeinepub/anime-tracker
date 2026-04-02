@@ -130,8 +130,8 @@ export default function WatchlistView({
 
     const trimmedNotes = notesValue.trim();
 
-    if (trimmedNotes.length > 120) {
-      toast.error("Notes must be 120 characters or less");
+    if (trimmedNotes.length > 1000) {
+      toast.error("Notes must be 1,000 characters or less");
       return;
     }
 
@@ -561,14 +561,14 @@ export default function WatchlistView({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-400">
-                  Character count: {notesValue.length}/120
+                  Character count: {notesValue.length}/1,000
                 </span>
               </div>
               <Textarea
                 value={notesValue}
                 onChange={(e) => setNotesValue(e.target.value)}
-                placeholder="Add your notes here (max 120 characters)..."
-                maxLength={120}
+                placeholder="Add your notes here (max 1,000 characters)..."
+                maxLength={1000}
                 className="min-h-[150px] bg-gray-900 border-2 border-yellow-600 text-white placeholder:text-gray-500 focus:border-yellow-400 resize-none"
                 autoFocus
               />

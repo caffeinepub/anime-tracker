@@ -125,8 +125,8 @@ export default function CreateAnimeCardDialog({
       return;
     }
 
-    if (notes.length > 120) {
-      toast.error("Notes must be 120 characters or less");
+    if (notes.length > 1000) {
+      toast.error("Notes must be 1,000 characters or less");
       return;
     }
 
@@ -357,13 +357,13 @@ export default function CreateAnimeCardDialog({
               Notes
             </Label>
             <span className="text-xs text-gray-500 block">
-              {notes.length}/120 characters
+              {notes.length}/1,000 characters
             </span>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              maxLength={120}
-              placeholder="Add personal notes... (max 120 characters)"
+              maxLength={1000}
+              placeholder="Add personal notes... (max 1,000 characters)"
               className="min-h-[80px] bg-gray-900 border-2 border-yellow-600 text-white placeholder:text-gray-500 focus:border-yellow-400 resize-none"
             />
           </div>
